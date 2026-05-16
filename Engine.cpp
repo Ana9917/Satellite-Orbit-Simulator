@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 #include <iostream>
+#include <vector>
 #include <cmath>
 #include "satellite.h"
 #define M_PI 3.14159265358979323846
@@ -10,15 +11,15 @@ constexpr int kScreenHeight = 480;
 
 int main()
 {
-    satellite s; /// Create a satellite
-    s.pos_x = 6600000;
-    s.pos_y = 0;
-    s.pos_z = 2000000;
-    s.vel_x = 0;
-    s.vel_y = 7800;
-    s.vel_z = 2000;
+    int n; /// Create a satellite
+    double dt;
+    cin >> n >> dt;
+    vector<satellite> v(n);
+    for (int i = 0; i < n; i++)
+        cin >> v[i].pos_x >> v[i].pos_y >> v[i].vel_x >> v[i].vel_y;
+    for (int i = 0; i < n; i++)
+        init(v[i]);
     double scale = 640.0 / 16000000.0; /// Adapt scale
-    double dt = 100.0;                 /// Define delta time
     const double camera_z = -20000000.0;
     const double focal_length = 400.0;
 
@@ -45,33 +46,35 @@ int main()
 
     bool running = true;
     SDL_Event event;
-    init(s);
     while (running) /// Main loop that checks for events sssuch as the user closing the window
     {
-        update(s, dt);
+        for (int i = 0; i < n; i++)
+            update(v[i], dt);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
-        double view_z = s.pos_z - camera_z;
-        double earth_r = (6371000.0 / (0 - camera_z)) * focal_length;
-        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-
-        for (double i = 0; i <= 2 * M_PI; i += 2 * M_PI / 100)
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        for (int i = 0; i < n; i++)
         {
-            /// Calculate the current angle
-            double x1 = 320 + earth_r * cos(i);
-            double y1 = 240 + earth_r * sin(i);
-            double x2 = 320 + earth_r * cos(i + 2 * M_PI / 100);
-            double y2 = 240 + earth_r * sin(i + 2 * M_PI / 100);
-            SDL_RenderLine(renderer, x1, y1, x2, y2);
+            double view_z = v[i].pos_z - camera_z;
+            double earth_r = (6371000.0 / (0 - camera_z)) * focal_length;
+            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+
+            for (double i = 0; i <= 2 * M_PI; i += 2 * M_PI / 100)
+            {
+                /// Calculate the current angle
+                double x1 = 320 + earth_r * cos(i);
+                double y1 = 240 + earth_r * sin(i);
+                double x2 = 320 + earth_r * cos(i + 2 * M_PI / 100);
+                double y2 = 240 + earth_r * sin(i + 2 * M_PI / 100);
+                SDL_RenderLine(renderer, x1, y1, x2, y2);
+            }
+
+            double screen_x = (v[i].pos_x / view_z) * focal_length + 320;
+            double screen_y = 240 - (v[i].pos_y / view_z) * focal_length;
+            if (view_z > 0)
+                SDL_RenderPoint(renderer, (float)screen_x, (float)screen_y); /// Draw the point
         }
 
-        double screen_x = (s.pos_x / view_z) * focal_length + 320;
-        double screen_y = 240 - (s.pos_y / view_z) * focal_length;
-        if (view_z > 0)
-        {
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            SDL_RenderPoint(renderer, (float)screen_x, (float)screen_y); /// Draw the point
-        }
         SDL_RenderPresent(renderer); /// Show the render
         while (SDL_PollEvent(&event))
         {

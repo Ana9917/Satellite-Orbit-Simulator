@@ -20,7 +20,12 @@ int main()
     for (int j = 0; j < t; j++) /// Loop through each time step
     {
         for (int i = 0; i < n; i++) /// Loop through each satellite
+        {
             update(v[i], dt);
+            double r = sqrt(pow(v[i].pos_x, 2) + pow(v[i].pos_y, 2));
+            cout << v[i].pos_x / 1000 << " " << v[i].pos_y / 1000 << " " << r / 1000 << "km\n";
+        }
+        cout << "\n";
 
         for (int i = 0; i < n; i++) /// Loop through each satellite to print its position
         {
