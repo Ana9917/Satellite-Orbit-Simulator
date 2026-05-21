@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <deque>
 #include "satellite.h"
 #define M_PI 3.14159265358979323846
 using namespace std;
@@ -14,6 +15,7 @@ int main()
     int n; /// Create a satellite
     double dt;
     cin >> n >> dt;
+    vector<deque<satellite>> trail(n);
     vector<satellite> v(n);
     for (int i = 0; i < n; i++)
         cin >> v[i].pos_x >> v[i].pos_y >> v[i].vel_x >> v[i].vel_y;
@@ -46,33 +48,56 @@ int main()
 
     bool running = true;
     SDL_Event event;
-    while (running) /// Main loop that checks for events sssuch as the user closing the window
+    while (running) /// Main loop that checks for events such as the user closing the window
     {
         for (int i = 0; i < n; i++)
             update(v[i], dt);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+        double earth_r = (6371000.0 / (0 - camera_z)) * focal_length;
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+
+        for (double i = 0; i <= 2 * M_PI; i += 2 * M_PI / 100)
+        {
+            /// Calculate the current angle
+            double x1 = 320 + earth_r * cos(i);
+            double y1 = 240 + earth_r * sin(i);
+            double x2 = 320 + earth_r * cos(i + 2 * M_PI / 100);
+            double y2 = 240 + earth_r * sin(i + 2 * M_PI / 100);
+            SDL_RenderLine(renderer, x1, y1, x2, y2); /// Draw Earth
+        }
+
         for (int i = 0; i < n; i++)
         {
+            /// Perspective projection
             double view_z = v[i].pos_z - camera_z;
-            double earth_r = (6371000.0 / (0 - camera_z)) * focal_length;
-            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-
-            for (double i = 0; i <= 2 * M_PI; i += 2 * M_PI / 100)
-            {
-                /// Calculate the current angle
-                double x1 = 320 + earth_r * cos(i);
-                double y1 = 240 + earth_r * sin(i);
-                double x2 = 320 + earth_r * cos(i + 2 * M_PI / 100);
-                double y2 = 240 + earth_r * sin(i + 2 * M_PI / 100);
-                SDL_RenderLine(renderer, x1, y1, x2, y2);
-            }
-
             double screen_x = (v[i].pos_x / view_z) * focal_length + 320;
             double screen_y = 240 - (v[i].pos_y / view_z) * focal_length;
+            trail[i].push_front(v[i]);
+            if (trail[i].size() > 1e5)
+                trail[i].pop_back();
             if (view_z > 0)
                 SDL_RenderPoint(renderer, (float)screen_x, (float)screen_y); /// Draw the point
+            for (int j = 0; j < trail[i].size() - 1; j++)
+            {
+                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+                /// Perspective projection for the trail
+                double tx1 = trail[i][j].pos_x;
+                double ty1 = trail[i][j].pos_y;
+                double tz1 = trail[i][j].pos_z;
+                double tx2 = trail[i][j + 1].pos_x;
+                double ty2 = trail[i][j + 1].pos_y;
+                double tz2 = trail[i][j + 1].pos_z;
+                double view_tz1 = tz1 - camera_z;
+                double view_tz2 = tz2 - camera_z;
+                double screen_tx = (tx1 / view_tz1) * focal_length + 320;
+                double screen_ty = 240 - (ty1 / view_tz1) * focal_length;
+                double screen_tx2 = (tx2 / view_tz2) * focal_length + 320;
+                double screen_ty2 = 240 - (ty2 / view_tz2) * focal_length;
+                SDL_RenderLine(renderer, screen_tx, screen_ty, screen_tx2, screen_ty2);
+            }
         }
 
         SDL_RenderPresent(renderer); /// Show the render
