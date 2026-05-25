@@ -19,6 +19,7 @@ int main()
     vector<satellite> v(n);
     for (int i = 0; i < n; i++)
         cin >> v[i].pos_x >> v[i].pos_y >> v[i].vel_x >> v[i].vel_y;
+    double r = sqrt(v[0].pos_x * v[0].pos_x + v[0].pos_y * v[0].pos_y + v[0].pos_z * v[0].pos_z);
     for (int i = 0; i < n; i++)
         init(v[i]);
     double scale = 640.0 / 16000000.0; /// Adapt scale
@@ -48,6 +49,9 @@ int main()
 
     bool running = true;
     SDL_Event event;
+    constexpr double GM = 3.986e14;
+    double T = 2 * M_PI * sqrt((r * r * r) / GM); ///Calculte orbital period
+    int steps = (int)(T / dt); ///No. of steps in one orbital period
     while (running) /// Main loop that checks for events such as the user closing the window
     {
         for (int i = 0; i < n; i++)
@@ -76,10 +80,15 @@ int main()
             double screen_x = (v[i].pos_x / view_z) * focal_length + 320;
             double screen_y = 240 - (v[i].pos_y / view_z) * focal_length;
             trail[i].push_front(v[i]);
-            if (trail[i].size() > 1e5)
+             if (view_z > 0)
+             {
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+                SDL_FRect rect={(float)screen_x-3, (float)screen_y-3, 6, 6};
+                SDL_RenderFillRect(renderer, &rect); /// Draw the satellite
+             }
+                
+            if (trail[i].size() > steps)
                 trail[i].pop_back();
-            if (view_z > 0)
-                SDL_RenderPoint(renderer, (float)screen_x, (float)screen_y); /// Draw the point
             for (int j = 0; j < trail[i].size() - 1; j++)
             {
                 SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
