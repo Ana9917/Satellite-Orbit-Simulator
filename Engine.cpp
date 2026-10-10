@@ -1,6 +1,4 @@
 #include <SDL3/SDL.h>
-#include <SDL3/SDL.h>
-#include <glad/glad.h>
 #include <iostream>
 #include <vector>
 #include <random>
@@ -35,13 +33,12 @@ int main()
     cin >> n >> dt;
     vector<deque<satellite>> trail(n);
     vector<satellite> v(n);
-    vector<star> stars(1000);
-    mt19937 gen(42); /// Number generator
+    vector<star> stars(1000); 
+    mt19937 gen(42); ///Number generator
     uniform_real_distribution<double> dist(-1e11, 1e11);
-    satellite q1, q2;
     for (int i = 0; i < stars.size(); i++)
     {
-        /// Gives random values to x, y, and z
+        ///Gives random values to x, y, and z
         stars[i].x = dist(gen);
         stars[i].y = dist(gen);
         stars[i].z = dist(gen);
@@ -60,18 +57,22 @@ int main()
         cout << "SDL could not initialise!" << SDL_GetError() << endl;
         return 1;
     }
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_Window* window = SDL_CreateWindow("Orbit Simulator", kScreenWidth, kScreenHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE); /// Create a window with the specified title, width, height and flags
-    SDL_GLContext context = SDL_GL_CreateContext(window); ///Create GLAD CONTEXT
-    gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress); ///Load GLAD
+
+    SDL_Window *window = SDL_CreateWindow("Simple SDL Window", kScreenWidth, kScreenHeight, SDL_WINDOW_RESIZABLE); /// Create a window with the specified title, width, height and flags
     if (!window)
     {
         cout << "The window could not be created" << SDL_GetError() << endl;
         SDL_Quit();
         return 1;
     }
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, NULL); /// Create renderer
+    if (!renderer)
+    {
+        cout << "The renderer could not be created" << SDL_GetError() << endl;
+        SDL_Quit();
+        return 1;
+    }
+
     bool running = true, paused = false;
     SDL_Event event;
     constexpr double GM = 3.986e14;
@@ -93,43 +94,29 @@ int main()
             pitch += 0.02;
         if (state[SDL_SCANCODE_DOWN])
             pitch -= 0.02;
-       
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
         for (int i = 0; i < stars.size(); i++)
         {
             double view_starz = stars[i].z - camera_z;
             double screen_starsx = (stars[i].x / view_starz) * focal_length + 320;
             double screen_starsy = 240 - (stars[i].y / view_starz) * focal_length;
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); ///Draw the stars
+            SDL_RenderPoint(renderer, screen_starsx, screen_starsy);
         }
-       
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
         double earth_r = (6371000.0 / (0 - camera_z)) * focal_length;
-    
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
 
         for (double i = 0; i <= 2 * M_PI; i += 2 * M_PI / 100)
         {
             /// Calculate the current angle
-            double x1 = 6371000.0 * cos(i);
-            double y1 = 6371000.0 * sin(i);
-            double x2 = 6371000.0 * cos(i + 2 * M_PI / 100);
-            double y2 = 6371000.0 * sin(i + 2 * M_PI / 100);
-            q1.pos_x = x1;
-            q1.pos_y = y1;
-            q1.pos_z = 0;
-            q2.pos_x = x2;
-            q2.pos_y = y2;
-            q2.pos_z = 0;
-            applyYaw(q1, yaw);
-            applyYaw(q2, yaw);
-            applyPitch(q1, pitch);
-            applyPitch(q2, pitch);
-            ///Projection formulas for q1 and q2
-            double view_z1 = q1.pos_z - camera_z;
-            double screen_x1 = (q1.pos_x / view_z1) * focal_length + 320;
-            double screen_y1 = 240 - (q1.pos_y / view_z1) * focal_length;
-            double view_z2 = q2.pos_z - camera_z;
-            double screen_x2 = (q2.pos_x / view_z2) * focal_length + 320;
-            double screen_y2 = 240 - (q2.pos_y / view_z2) * focal_length;
-            
+            double x1 = 320 + earth_r * cos(i);
+            double y1 = 240 + earth_r * sin(i);
+            double x2 = 320 + earth_r * cos(i + 2 * M_PI / 100);
+            double y2 = 240 + earth_r * sin(i + 2 * M_PI / 100);
+            SDL_RenderLine(renderer, x1, y1, x2, y2); /// Draw Earth
         }
 
         for (int i = 0; i < n; i++)
@@ -144,15 +131,16 @@ int main()
             trail[i].push_front(v[i]);
             if (view_z > 0)
             {
-                
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                 SDL_FRect rect = {(float)screen_x - 3, (float)screen_y - 3, 6, 6};
+                SDL_RenderFillRect(renderer, &rect); /// Draw the satellite
             }
 
             if (trail[i].size() > steps)
                 trail[i].pop_back();
             for (int j = 0; j < trail[i].size() - 1; j++)
             {
-               
+                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
                 satellite r1 = trail[i][j]; /// Copy trail points for display rotation
                 satellite r2 = trail[i][j + 1];
                 /// Perspective projection for the trail
@@ -166,28 +154,20 @@ int main()
                 double screen_ty = 240 - (r1.pos_y / view_tz1) * focal_length;
                 double screen_tx2 = (r2.pos_x / view_tz2) * focal_length + 320;
                 double screen_ty2 = 240 - (r2.pos_y / view_tz2) * focal_length;
-                
+                SDL_RenderLine(renderer, screen_tx, screen_ty, screen_tx2, screen_ty2);
             }
         }
 
-        SDL_GL_SwapWindow(window); /// Show the render
+        SDL_RenderPresent(renderer); /// Show the render
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_EVENT_KEY_DOWN && event.key.scancode == SDL_SCANCODE_SPACE)
                 paused = !paused;
             if (event.type == SDL_EVENT_QUIT)
                 running = false;
-            if (SDL_EVENT_MOUSE_MOTION == event.type)
-            {
-                if (event.motion.state == SDL_BUTTON_MASK(SDL_BUTTON_LEFT))
-                {
-                    yaw += event.motion.xrel * 0.2;
-                    pitch += event.motion.yrel * 0.2;
-                }
-            }
         }
     }
-   
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window); /// Cleans up resources by destroying the window and quitting SDL
     SDL_Quit();
     return 0;
