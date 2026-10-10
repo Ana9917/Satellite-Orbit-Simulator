@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <iostream>
 #include <vector>
 #include <random>
@@ -72,7 +73,7 @@ void drawMesh(SDL_Renderer *renderer, const Mesh &mesh,
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     int n; /// Create a satellite
     double dt, yaw = 0.0, pitch = 0.0;
@@ -101,7 +102,7 @@ int main()
     const double camera_z = -20000000.0;
     double focal_length = 400.0;
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) /// Check if SDL initialisation was successful and prints an error message if it was not
+    if (!SDL_Init(SDL_INIT_VIDEO)) /// Check if SDL initialisation was successful and prints an error message if it was not
     {
         cout << "SDL could not initialise!" << SDL_GetError() << endl;
         return 1;

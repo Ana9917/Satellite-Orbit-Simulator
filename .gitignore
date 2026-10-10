@@ -1,4 +1,22 @@
-/app.exe
-SatelliteOrbit.exe
-main.cpp
-/main.exe
+# CMake build directories
+/build/
+/build-*/
+/out/
+
+# Generated binaries and object files
+*.exe
+*.dll
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+/app
+/Engine
+/main
+/SatelliteOrbit
+
+# User-specific CMake settings
+CMakeUserPresets.json
