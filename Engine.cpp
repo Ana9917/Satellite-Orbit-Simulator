@@ -76,7 +76,10 @@ int main()
 {
     int n; /// Create a satellite
     double dt, yaw = 0.0, pitch = 0.0;
-    cin >> n >> dt;
+    cout<<"No. of satellites ";
+    cin>> n;
+    cout<<"Delta time ";
+    cin>> dt;
     vector<deque<satellite>> trail(n);
     vector<satellite> v(n);
     vector<star> stars(1000);
